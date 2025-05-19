@@ -8,11 +8,15 @@
         * {
             font-family: "黑体", "SimHei", sans-serif !important;
             font-size: 16px !important;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         body {
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
+            background-color: #f5f5f5;
         }
         #editor {
             border: 1px solid #ccc;
@@ -20,12 +24,17 @@
             padding: 15px;
             margin: 20px 0;
             white-space: pre;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .floating-buttons {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            z-index: 1000;
+            z-index: 100000;
+            transition: all 0.3s ease;
+            transform: translateZ(100px);
         }
         .main-floating-btn {
             width: 50px;
@@ -37,6 +46,14 @@
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             transition: transform 0.3s;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        .main-floating-btn:hover {
+            transform: scale(1.1);
         }
         .buttons-panel {
             display: none;
@@ -50,6 +67,7 @@
             max-width: 400px;
             max-height: 70vh;
             overflow-y: auto;
+            z-index: 100001;
         }
         .buttons-panel.show {
             display: grid;
@@ -60,6 +78,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            min-width: 180px;
         }
         .floating-btn {
             padding: 8px 12px;
@@ -68,6 +87,14 @@
             background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 4px;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            color: #333;
+        }
+        .floating-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
         }
         .search-container {
             display: flex;
@@ -77,11 +104,24 @@
         #searchBox {
             flex: 1;
             padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        #searchBox:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
         }
         .highlight {
             background-color: #ffeb3b;
             border-radius: 3px;
             padding: 2px 0;
+            animation: highlight 1s ease;
+        }
+        @keyframes highlight {
+            from { background-color: #fffb8f; }
+            to { background-color: #ffeb3b; }
         }
         .custom-hr {
             border: none;
@@ -100,24 +140,56 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 9999;
+            z-index: 99999;
+            width: 90%;
+            max-width: 400px;
+        }
+        #customDialog h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        #customDialog input {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        #customDialog button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            transition: background 0.2s ease;
+        }
+        #customDialog button:hover {
+            background: #0056b3;
         }
         .compatibility {
             position: relative;
             display: inline-block;
             margin-right: 15px;
+            padding-right: 20px;
         }
         .compatibility::before {
             content: "⌠";
             position: absolute;
             right: -10px;
             top: -0.8em;
+            font-size: 1.2em;
+            color: #666;
         }
         .compatibility::after {
             content: "⌡";
             position: absolute;
             right: -10px;
             bottom: -0.5em;
+            font-size: 1.2em;
+            color: #666;
         }
     </style>
 </head>
@@ -169,15 +241,19 @@
 
     <div id="customDialog">
         <h3>添加自定义按钮</h3>
-        <input type="text" id="btnName" placeholder="按钮名称" style="margin:10px 0;width:100%">
-        <input type="text" id="btnValue" placeholder="插入内容" style="margin:10px 0;width:100%">
+        <input type="text" id="btnName" placeholder="按钮名称（例如：胰岛素）">
+        <input type="text" id="btnValue" placeholder="插入内容（例如：胰岛素 4u ih）">
         <div style="display:flex;gap:10px;margin-top:15px">
             <button onclick="addCustomButton()">确认</button>
-            <button onclick="document.getElementById('customDialog').style.display='none'">取消</button>
+            <button onclick="document.getElementById('customDialog').style.display='none'" style="background:#6c757d">取消</button>
         </div>
     </div>
 
     <script>
+        // ================= 核心功能 =================
+        let isKeyboardOpen = false;
+        const originalBottom = 30;
+
         // 悬浮面板控制
         function togglePanel() {
             const panel = document.getElementById('buttonsPanel');
@@ -191,36 +267,43 @@
             }
         });
 
-        // 横线功能（已修复）
-        function insertHorizontalRule() {
-            const editor = document.getElementById('editor');
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            const range = selection.getRangeAt(0);
-            const lineDiv = document.createElement('div');
-            const hr = document.createElement('hr');
-            hr.className = 'custom-hr';
-            
-            // 在当前行下方插入横线
-            range.insertNode(document.createTextNode('\n'));
-            lineDiv.appendChild(hr);
-            range.insertNode(lineDiv);
-            
-            // 插入换行并移动光标
-            const br = document.createElement('br');
-            lineDiv.parentNode.insertBefore(br, lineDiv.nextSibling);
-            
-            const newRange = document.createRange();
-            newRange.setStartAfter(br);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            
-            editor.focus();
+        // 输入法适配功能
+        function adjustFloatingPosition() {
+            const floatingBtn = document.querySelector('.floating-buttons');
+            if (window.visualViewport) {
+                isKeyboardOpen = true;
+                const offset = window.visualViewport.height - 150;
+                floatingBtn.style.position = 'fixed';
+                floatingBtn.style.top = `${offset}px`;
+                floatingBtn.style.bottom = 'auto';
+            }
         }
 
-        // 文本插入功能
+        function resetFloatingPosition() {
+            const floatingBtn = document.querySelector('.floating-buttons');
+            isKeyboardOpen = false;
+            floatingBtn.style.position = 'fixed';
+            floatingBtn.style.top = 'auto';
+            floatingBtn.style.bottom = `${originalBottom}px`;
+        }
+
+        // 移动端点击优化
+        document.querySelector('.floating-buttons').addEventListener('touchstart', (e) => {
+            if (isKeyboardOpen) {
+                e.stopPropagation();
+                e.preventDefault();
+                togglePanel();
+            }
+        }, { passive: false });
+
+        window.addEventListener('resize', adjustFloatingPosition);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('scroll', adjustFloatingPosition);
+            window.visualViewport.addEventListener('resize', adjustFloatingPosition);
+        }
+        document.getElementById('editor').addEventListener('blur', resetFloatingPosition);
+
+        // ================= 编辑功能 =================
         function insertText(text) {
             const editor = document.getElementById('editor');
             const selection = window.getSelection();
@@ -239,7 +322,6 @@
             editor.focus();
         }
 
-        // 换行功能
         function insertNewline() {
             const editor = document.getElementById('editor');
             const br = document.createElement('br');
@@ -258,7 +340,6 @@
             editor.focus();
         }
 
-        // 跳转到新行开头
         function jumpToNewLine() {
             const editor = document.getElementById('editor');
             const br = document.createElement('br');
@@ -275,7 +356,6 @@
             editor.focus();
         }
 
-        // 配伍符号功能
         function insertCompatibility() {
             const editor = document.getElementById('editor');
             const selection = window.getSelection();
@@ -303,7 +383,33 @@
             editor.focus();
         }
 
-        // 搜索功能
+        function insertHorizontalRule() {
+            const editor = document.getElementById('editor');
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const lineDiv = document.createElement('div');
+            const hr = document.createElement('hr');
+            hr.className = 'custom-hr';
+            
+            range.insertNode(document.createTextNode('\n'));
+            lineDiv.appendChild(hr);
+            range.insertNode(lineDiv);
+            
+            const br = document.createElement('br');
+            lineDiv.parentNode.insertBefore(br, lineDiv.nextSibling);
+            
+            const newRange = document.createRange();
+            newRange.setStartAfter(br);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            
+            editor.focus();
+        }
+
+        // ================= 搜索功能 =================
         let currentHighlights = [];
 
         function performSearch() {
@@ -390,15 +496,20 @@
             currentHighlights = [];
         }
 
-        // 自定义按钮功能
+        // ================= 自定义按钮功能 =================
         function showCustomBtnDialog() {
             document.getElementById('customDialog').style.display = 'block';
+            document.getElementById('btnName').value = '';
+            document.getElementById('btnValue').value = '';
         }
 
         function addCustomButton() {
-            const name = document.getElementById('btnName').value;
-            const value = document.getElementById('btnValue').value;
-            if (!name || !value) return;
+            const name = document.getElementById('btnName').value.trim();
+            const value = document.getElementById('btnValue').value.trim();
+            if (!name || !value) {
+                alert("请填写按钮名称和插入内容");
+                return;
+            }
 
             const customBtns = JSON.parse(localStorage.getItem('customButtons') || '[]');
             customBtns.push({ name, value });
@@ -416,7 +527,7 @@
             document.querySelector('.button-group-column:last-child').appendChild(btn);
         }
 
-        // 自动保存功能
+        // ================= 数据持久化 =================
         setInterval(() => {
             const cleanEditor = document.getElementById('editor').cloneNode(true);
             cleanEditor.querySelectorAll('.highlight').forEach(el => {
@@ -425,18 +536,25 @@
             localStorage.setItem('medicalMemo', cleanEditor.innerHTML);
         }, 1000);
 
-        // 初始化加载
         window.onload = () => {
             const saved = localStorage.getItem('medicalMemo');
-            if (saved) document.getElementById('editor').innerHTML = saved;
+            if (saved) {
+                document.getElementById('editor').innerHTML = saved;
+            }
 
             const customBtns = JSON.parse(localStorage.getItem('customButtons') || '[]');
             customBtns.forEach(btn => createCustomButton(btn.name, btn.value));
         };
 
-        // 搜索框回车支持
+        // ================= 其他功能 =================
         document.getElementById('searchBox').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') performSearch();
+        });
+
+        // 防止页面意外关闭
+        window.addEventListener('beforeunload', function (e) {
+            e.preventDefault();
+            e.returnValue = '';
         });
     </script>
 </body>
