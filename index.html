@@ -7,7 +7,7 @@
     <style>
         * {
             font-family: "黑体", "SimHei", sans-serif !important;
-            font-size: 16px;
+            font-size: 16px !important;
         }
         body {
             max-width: 800px;
@@ -60,7 +60,6 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            min-width: 180px;
         }
         .floating-btn {
             padding: 8px 12px;
@@ -85,9 +84,10 @@
             padding: 2px 0;
         }
         .custom-hr {
-            border: 0;
+            border: none;
             border-top: 2px solid #666;
             margin: 8px 0;
+            height: 0;
             width: 100%;
         }
         #customDialog {
@@ -137,14 +137,13 @@
                 <button class="floating-btn" onclick="insertText('   ')">3空格</button>
                 <button class="floating-btn" onclick="insertNewline()">换行</button>
                 <button class="floating-btn" onclick="jumpToNewLine()">新行开头</button>
-                <button class="floating-btn" onclick="showCustomBtnDialog()">+ 添加按钮</button>
-            </div>
-
-            <div class="button-group-column">
                 <button class="floating-btn" onclick="insertText('ivgtt')">ivgtt</button>
                 <button class="floating-btn" onclick="insertText('iv')">iv</button>
                 <button class="floating-btn" onclick="insertText('ih')">ih</button>
                 <button class="floating-btn" onclick="insertText('im')">im</button>
+            </div>
+
+            <div class="button-group-column">
                 <button class="floating-btn" onclick="insertText('bid')">bid</button>
                 <button class="floating-btn" onclick="insertText('qd')">qd</button>
                 <button class="floating-btn" onclick="insertText('tid')">tid</button>
@@ -153,9 +152,6 @@
                 <button class="floating-btn" onclick="insertText('q2h')">q2h</button>
                 <button class="floating-btn" onclick="insertText('q4h')">q4h</button>
                 <button class="floating-btn" onclick="insertText('q8h')">q8h</button>
-            </div>
-
-            <div class="button-group-column">
                 <button class="floating-btn" onclick="insertText('mg')">mg</button>
                 <button class="floating-btn" onclick="insertText('ml')">ml</button>
                 <button class="floating-btn" onclick="insertText('ug')">ug</button>
@@ -166,6 +162,7 @@
                 <button class="floating-btn" onclick="insertText('5%GS')">5%GS</button>
                 <button class="floating-btn" onclick="insertText('10%GS')">10%GS</button>
                 <button class="floating-btn" onclick="insertText('50%GS')">50%GS</button>
+                <button class="floating-btn" onclick="showCustomBtnDialog()">+ 添加按钮</button>
             </div>
         </div>
     </div>
@@ -194,7 +191,36 @@
             }
         });
 
-        // 编辑功能
+        // 横线功能（已修复）
+        function insertHorizontalRule() {
+            const editor = document.getElementById('editor');
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+
+            const range = selection.getRangeAt(0);
+            const lineDiv = document.createElement('div');
+            const hr = document.createElement('hr');
+            hr.className = 'custom-hr';
+            
+            // 在当前行下方插入横线
+            range.insertNode(document.createTextNode('\n'));
+            lineDiv.appendChild(hr);
+            range.insertNode(lineDiv);
+            
+            // 插入换行并移动光标
+            const br = document.createElement('br');
+            lineDiv.parentNode.insertBefore(br, lineDiv.nextSibling);
+            
+            const newRange = document.createRange();
+            newRange.setStartAfter(br);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            
+            editor.focus();
+        }
+
+        // 文本插入功能
         function insertText(text) {
             const editor = document.getElementById('editor');
             const selection = window.getSelection();
@@ -213,6 +239,7 @@
             editor.focus();
         }
 
+        // 换行功能
         function insertNewline() {
             const editor = document.getElementById('editor');
             const br = document.createElement('br');
@@ -231,6 +258,7 @@
             editor.focus();
         }
 
+        // 跳转到新行开头
         function jumpToNewLine() {
             const editor = document.getElementById('editor');
             const br = document.createElement('br');
@@ -247,6 +275,7 @@
             editor.focus();
         }
 
+        // 配伍符号功能
         function insertCompatibility() {
             const editor = document.getElementById('editor');
             const selection = window.getSelection();
@@ -267,28 +296,6 @@
             
             const newRange = document.createRange();
             newRange.setStartAfter(wrapper);
-            newRange.collapse(true);
-            selection.removeAllRanges();
-            selection.addRange(newRange);
-            
-            editor.focus();
-        }
-
-        function insertHorizontalRule() {
-            const editor = document.getElementById('editor');
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            
-            const lineDiv = document.createElement('div');
-            const hr = document.createElement('hr');
-            hr.className = 'custom-hr';
-            
-            lineDiv.appendChild(document.createElement('br'));
-            lineDiv.appendChild(hr);
-            range.insertNode(lineDiv);
-            
-            const newRange = document.createRange();
-            newRange.setStartAfter(lineDiv);
             newRange.collapse(true);
             selection.removeAllRanges();
             selection.addRange(newRange);
@@ -406,10 +413,10 @@
             btn.className = 'floating-btn';
             btn.textContent = name;
             btn.onclick = () => insertText(value);
-            document.querySelector('.button-group-column').appendChild(btn);
+            document.querySelector('.button-group-column:last-child').appendChild(btn);
         }
 
-        // 自动保存和加载
+        // 自动保存功能
         setInterval(() => {
             const cleanEditor = document.getElementById('editor').cloneNode(true);
             cleanEditor.querySelectorAll('.highlight').forEach(el => {
@@ -418,6 +425,7 @@
             localStorage.setItem('medicalMemo', cleanEditor.innerHTML);
         }, 1000);
 
+        // 初始化加载
         window.onload = () => {
             const saved = localStorage.getItem('medicalMemo');
             if (saved) document.getElementById('editor').innerHTML = saved;
