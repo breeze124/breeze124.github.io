@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>医疗备忘录</title>
     <style>
+        * {
+            font-family: "黑体", "SimHei", sans-serif !important;
+            font-size: 16px;
+        }
         body {
-            font-family: 'Courier New', monospace;
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
@@ -44,25 +47,60 @@
             padding: 15px;
             border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            max-width: 400px;
             max-height: 70vh;
             overflow-y: auto;
         }
         .buttons-panel.show {
-            display: block;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
         }
-        .panel-button-group {
+        .button-group-column {
             display: flex;
             flex-direction: column;
             gap: 8px;
-            margin: 5px 0;
+            min-width: 180px;
         }
-        .panel-button-group button {
+        .floating-btn {
             padding: 8px 12px;
             white-space: nowrap;
             text-align: left;
             background: #f8f9fa;
             border: 1px solid #dee2e6;
             border-radius: 4px;
+        }
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        #searchBox {
+            flex: 1;
+            padding: 8px;
+        }
+        .highlight {
+            background-color: #ffeb3b;
+            border-radius: 3px;
+            padding: 2px 0;
+        }
+        .custom-hr {
+            border: 0;
+            border-top: 2px solid #666;
+            margin: 8px 0;
+            width: 100%;
+        }
+        #customDialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 9999;
         }
         .compatibility {
             position: relative;
@@ -81,20 +119,6 @@
             right: -10px;
             bottom: -0.5em;
         }
-        .search-container {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        #searchBox {
-            flex: 1;
-            padding: 8px;
-        }
-        .highlight {
-            background-color: #ffeb3b;
-            border-radius: 3px;
-            padding: 2px 0;
-        }
     </style>
 </head>
 <body>
@@ -107,127 +131,57 @@
     <div class="floating-buttons">
         <button class="main-floating-btn" onclick="togglePanel()">+</button>
         <div class="buttons-panel" id="buttonsPanel">
-            <div class="panel-button-group">
-                <button onclick="insertText('ivgtt')">ivgtt</button>
-                <button onclick="insertText('iv')">iv</button>
-                <button onclick="insertText('ih')">ih</button>
-                <button onclick="insertText('im')">im</button>
-                <button onclick="insertText('bid')">bid</button>
-                <button onclick="insertText('qd')">qd</button>
-                <button onclick="insertText('tid')">tid</button>
+            <div class="button-group-column">
+                <button class="floating-btn" onclick="insertHorizontalRule()">横线</button>
+                <button class="floating-btn" onclick="insertCompatibility()">配伍符号</button>
+                <button class="floating-btn" onclick="insertText('   ')">3空格</button>
+                <button class="floating-btn" onclick="insertNewline()">换行</button>
+                <button class="floating-btn" onclick="jumpToNewLine()">新行开头</button>
+                <button class="floating-btn" onclick="showCustomBtnDialog()">+ 添加按钮</button>
             </div>
 
-            <div class="panel-button-group">
-                <button onclick="insertText('mg')">mg</button>
-                <button onclick="insertText('ml')">ml</button>
-                <button onclick="insertText('ug')">ug</button>
-                <button onclick="insertText('g')">g</button>
-                <button onclick="insertText('NS')">NS</button>
-                <button onclick="insertText('GS')">GS</button>
-                <button onclick="insertText('GNS')">GNS</button>
-                <button onclick="insertText('5%GS')">5%GS</button>
-                <button onclick="insertText('10%GS')">10%GS</button>
-                <button onclick="insertText('50%GS')">50%GS</button>
+            <div class="button-group-column">
+                <button class="floating-btn" onclick="insertText('ivgtt')">ivgtt</button>
+                <button class="floating-btn" onclick="insertText('iv')">iv</button>
+                <button class="floating-btn" onclick="insertText('ih')">ih</button>
+                <button class="floating-btn" onclick="insertText('im')">im</button>
+                <button class="floating-btn" onclick="insertText('bid')">bid</button>
+                <button class="floating-btn" onclick="insertText('qd')">qd</button>
+                <button class="floating-btn" onclick="insertText('tid')">tid</button>
+                <button class="floating-btn" onclick="insertText('ml/h')">ml/h</button>
+                <button class="floating-btn" onclick="insertText('u')">u</button>
+                <button class="floating-btn" onclick="insertText('q2h')">q2h</button>
+                <button class="floating-btn" onclick="insertText('q4h')">q4h</button>
+                <button class="floating-btn" onclick="insertText('q8h')">q8h</button>
             </div>
 
-            <div class="panel-button-group">
-                <button onclick="insertCompatibility()">配伍符号</button>
-                <button onclick="insertText('   ')">3空格</button>
-                <button onclick="insertNewline()">换行</button>
-                <button onclick="jumpToNewLine()">新行开头</button>
+            <div class="button-group-column">
+                <button class="floating-btn" onclick="insertText('mg')">mg</button>
+                <button class="floating-btn" onclick="insertText('ml')">ml</button>
+                <button class="floating-btn" onclick="insertText('ug')">ug</button>
+                <button class="floating-btn" onclick="insertText('g')">g</button>
+                <button class="floating-btn" onclick="insertText('NS')">NS</button>
+                <button class="floating-btn" onclick="insertText('GS')">GS</button>
+                <button class="floating-btn" onclick="insertText('GNS')">GNS</button>
+                <button class="floating-btn" onclick="insertText('5%GS')">5%GS</button>
+                <button class="floating-btn" onclick="insertText('10%GS')">10%GS</button>
+                <button class="floating-btn" onclick="insertText('50%GS')">50%GS</button>
             </div>
         </div>
     </div>
 
+    <div id="customDialog">
+        <h3>添加自定义按钮</h3>
+        <input type="text" id="btnName" placeholder="按钮名称" style="margin:10px 0;width:100%">
+        <input type="text" id="btnValue" placeholder="插入内容" style="margin:10px 0;width:100%">
+        <div style="display:flex;gap:10px;margin-top:15px">
+            <button onclick="addCustomButton()">确认</button>
+            <button onclick="document.getElementById('customDialog').style.display='none'">取消</button>
+        </div>
+    </div>
+
     <script>
-        // 搜索功能相关
-        let currentHighlights = [];
-
-        function performSearch() {
-            clearHighlights();
-            const searchText = document.getElementById('searchBox').value.trim();
-            if (!searchText) return;
-
-            const editor = document.getElementById('editor');
-            const textNodes = getTextNodes(editor);
-            const matches = findMatches(textNodes, searchText);
-
-            if (matches.length === 0) {
-                alert("未找到匹配内容");
-                return;
-            }
-
-            highlightMatches(matches);
-            scrollToFirstMatch(matches[0]);
-        }
-
-        function getTextNodes(node) {
-            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-            const textNodes = [];
-            while (walker.nextNode()) {
-                textNodes.push(walker.currentNode);
-            }
-            return textNodes;
-        }
-
-        function findMatches(textNodes, searchText) {
-            const regex = new RegExp(searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-            const matches = [];
-            
-            textNodes.forEach(node => {
-                let match;
-                while ((match = regex.exec(node.textContent)) !== null) {
-                    matches.push({
-                        node: node,
-                        start: match.index,
-                        end: match.index + match[0].length
-                    });
-                }
-            });
-            
-            return matches;
-        }
-
-        function highlightMatches(matches) {
-            matches.forEach(match => {
-                const range = document.createRange();
-                range.setStart(match.node, match.start);
-                range.setEnd(match.node, match.end);
-                
-                const span = document.createElement('span');
-                span.className = 'highlight';
-                range.surroundContents(span);
-                currentHighlights.push(span);
-            });
-        }
-
-        function scrollToFirstMatch(match) {
-            const range = document.createRange();
-            range.setStart(match.node, match.start);
-            range.setEnd(match.node, match.end);
-            
-            range.startContainer.parentNode.scrollIntoView({
-                behavior: 'smooth',
-                block: 'center'
-            });
-
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-
-        function clearHighlights() {
-            currentHighlights.forEach(span => {
-                const parent = span.parentNode;
-                while (span.firstChild) {
-                    parent.insertBefore(span.firstChild, span);
-                }
-                parent.removeChild(span);
-            });
-            currentHighlights = [];
-        }
-
-        // 悬浮面板功能
+        // 悬浮面板控制
         function togglePanel() {
             const panel = document.getElementById('buttonsPanel');
             panel.classList.toggle('show');
@@ -320,7 +274,142 @@
             editor.focus();
         }
 
-        // 自动保存
+        function insertHorizontalRule() {
+            const editor = document.getElementById('editor');
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            
+            const lineDiv = document.createElement('div');
+            const hr = document.createElement('hr');
+            hr.className = 'custom-hr';
+            
+            lineDiv.appendChild(document.createElement('br'));
+            lineDiv.appendChild(hr);
+            range.insertNode(lineDiv);
+            
+            const newRange = document.createRange();
+            newRange.setStartAfter(lineDiv);
+            newRange.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(newRange);
+            
+            editor.focus();
+        }
+
+        // 搜索功能
+        let currentHighlights = [];
+
+        function performSearch() {
+            clearHighlights();
+            const searchText = document.getElementById('searchBox').value.trim();
+            if (!searchText) return;
+
+            const editor = document.getElementById('editor');
+            const textNodes = getTextNodes(editor);
+            const matches = findMatches(textNodes, searchText);
+
+            if (matches.length === 0) {
+                alert("未找到匹配内容");
+                return;
+            }
+
+            highlightMatches(matches);
+            scrollToFirstMatch(matches[0]);
+        }
+
+        function getTextNodes(node) {
+            const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+            const textNodes = [];
+            while (walker.nextNode()) {
+                textNodes.push(walker.currentNode);
+            }
+            return textNodes;
+        }
+
+        function findMatches(textNodes, searchText) {
+            const regex = new RegExp(searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+            const matches = [];
+            
+            textNodes.forEach(node => {
+                let match;
+                while ((match = regex.exec(node.textContent)) !== null) {
+                    matches.push({
+                        node: node,
+                        start: match.index,
+                        end: match.index + match[0].length
+                    });
+                }
+            });
+            
+            return matches;
+        }
+
+        function highlightMatches(matches) {
+            matches.forEach(match => {
+                const range = document.createRange();
+                range.setStart(match.node, match.start);
+                range.setEnd(match.node, match.end);
+                
+                const span = document.createElement('span');
+                span.className = 'highlight';
+                range.surroundContents(span);
+                currentHighlights.push(span);
+            });
+        }
+
+        function scrollToFirstMatch(match) {
+            const range = document.createRange();
+            range.setStart(match.node, match.start);
+            range.setEnd(match.node, match.end);
+            
+            range.startContainer.parentNode.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        function clearHighlights() {
+            currentHighlights.forEach(span => {
+                const parent = span.parentNode;
+                while (span.firstChild) {
+                    parent.insertBefore(span.firstChild, span);
+                }
+                parent.removeChild(span);
+            });
+            currentHighlights = [];
+        }
+
+        // 自定义按钮功能
+        function showCustomBtnDialog() {
+            document.getElementById('customDialog').style.display = 'block';
+        }
+
+        function addCustomButton() {
+            const name = document.getElementById('btnName').value;
+            const value = document.getElementById('btnValue').value;
+            if (!name || !value) return;
+
+            const customBtns = JSON.parse(localStorage.getItem('customButtons') || '[]');
+            customBtns.push({ name, value });
+            localStorage.setItem('customButtons', JSON.stringify(customBtns));
+
+            createCustomButton(name, value);
+            document.getElementById('customDialog').style.display = 'none';
+        }
+
+        function createCustomButton(name, value) {
+            const btn = document.createElement('button');
+            btn.className = 'floating-btn';
+            btn.textContent = name;
+            btn.onclick = () => insertText(value);
+            document.querySelector('.button-group-column').appendChild(btn);
+        }
+
+        // 自动保存和加载
         setInterval(() => {
             const cleanEditor = document.getElementById('editor').cloneNode(true);
             cleanEditor.querySelectorAll('.highlight').forEach(el => {
@@ -329,12 +418,12 @@
             localStorage.setItem('medicalMemo', cleanEditor.innerHTML);
         }, 1000);
 
-        // 初始化加载
         window.onload = () => {
             const saved = localStorage.getItem('medicalMemo');
-            if (saved) {
-                document.getElementById('editor').innerHTML = saved;
-            }
+            if (saved) document.getElementById('editor').innerHTML = saved;
+
+            const customBtns = JSON.parse(localStorage.getItem('customButtons') || '[]');
+            customBtns.forEach(btn => createCustomButton(btn.name, btn.value));
         };
 
         // 搜索框回车支持
