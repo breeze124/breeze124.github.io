@@ -133,6 +133,8 @@
         <button class="main-floating-btn" onclick="togglePanel()">+</button>
         <div class="buttons-panel" id="buttonsPanel">
             <div class="button-group-column">
+                <button class="floating-btn" onclick="exportData()">导出内容</button>
+                <button class="floating-btn" onclick="importData()">导入内容</button>
                 <button class="floating-btn" onclick="insertHorizontalRule()">横线</button>
                 <button class="floating-btn" onclick="insertCompatibility()">配伍符号</button>
                 <button class="floating-btn" onclick="insertText('   ')">3空格</button>
@@ -323,6 +325,41 @@
             selection.addRange(newRange);
             
             editor.focus();
+        }
+
+        // 导出编辑器内容为HTML文件
+        function exportData() {
+            const editorContent = document.getElementById('editor').innerHTML;
+            const blob = new Blob([editorContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'medical_memo.html';
+            a.click();
+
+            URL.revokeObjectURL(url);
+        }
+
+        // 导入HTML文件并加载到编辑器中
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.html';
+
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const content = e.target.result;
+                    document.getElementById('editor').innerHTML = content;
+                };
+                reader.readAsText(file);
+            };
+
+            input.click();
         }
 
         // 搜索功能
